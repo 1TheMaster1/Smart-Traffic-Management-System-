@@ -162,20 +162,21 @@ def process_frame(ip, port, lanes=None, frame=None):
     lane_counts = get_lane_counts(boxes,lanes)
     return lane_counts
 
-if __name__ == "__main__":
-    
+def main():
+    ip = "192.168.1.57"
+    port = 8080
     DEFINE_LANES = True 
     print("Capturing image from camera...")
-    frame = capture_frame("192.168.1.100", 8080)
+    frame = capture_frame(ip, port)
     if frame is None:
         print("Failed to capture frame. Please check your IP/stream.")
-        exit()
+        return
     saved = cv2.imwrite("capture.jpg", frame)
     if saved:
         print("capture.jpg successfully saved.")
     else:
         print("Failed to save capture.jpg.")
-        exit()
+        return
     if DEFINE_LANES:
         print("Opening interactive lane definition tool...")
         lanes = define_lanes_interactively("capture.jpg")
@@ -189,3 +190,7 @@ if __name__ == "__main__":
       print("Failed to process frame.")
     else:
       print(f"Cars detected per lane: {counts}")
+
+
+if __name__ == "__main__":
+    main()
