@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 import requests
-
+import os
 
 model = YOLO("best.pt")  # Load YOLOv8 model
 
@@ -35,7 +35,7 @@ def letterbox_image(image, target_size=(640, 640), color=(0,0,0)):
 def capture_frame(ip, port):
   url=f'http://{ip}:{port}/shot.jpg'  #construct url for webcam stream
   try:
-    response = requests.get(url, timeout=5) #http GET request for jpg img
+    response = requests.get(url, timeout=10) #http GET request for jpg img
     if response.status_code == 200: #success
 
       #response.content -> raw byte data
@@ -93,7 +93,7 @@ def extract_boxes(result):
   return boxes
 
 def define_lanes_interactively(image_path): #interactive tool to define lane boundaries
-    lane_points = []
+    #lane_points = []
     current_lane = []
     lanes_polygons = []
     
@@ -111,7 +111,7 @@ def define_lanes_interactively(image_path): #interactive tool to define lane bou
         elif event == cv2.EVENT_RBUTTONDOWN:
             # Complete the current lane if it has enough points
             if len(current_lane) >= 3:
-                lanes_polygons.append(current_lane.copy())
+                lanes_polygons.append(np.array(current_lane, dtype=np.int32)) #save lane as numpy array
                 
                 # Draw the completed polygon
                 pts = np.array(current_lane, np.int32).reshape((-1, 1, 2))
@@ -143,21 +143,20 @@ def define_lanes_interactively(image_path): #interactive tool to define lane bou
  
     print("Lane Definitions (Polygons):")
     for i, poly in enumerate(lanes_polygons):
-        print(f"Lane {i}: {poly}")
+        print(f"Lane {i}: {poly.tolist()}")
     
     return lanes_polygons
 
 def get_lane_counts(boxes,lanes): 
     lane_counts = [0, 0, 0, 0]
     for cx, cy in boxes:
-        for i, lane in enumerate(lanes):
-            contour = np.array(lane, dtype=np.int32) #Convert the polygon point list into a NumPy array (OpenCV expects contours as NumPy arrays).
-            if cv2.pointPolygonTest(contour, (cx, cy), False) >= 0:
+        for i, lane in enumerate(lanes): 
+            if cv2.pointPolygonTest(lane, (cx, cy), False) >= 0:
                 lane_counts[i] += 1
                 break
     return lane_counts
 
-def process_frame(ip, port, lanes=None, frame=None):
+def process_frame(ip, port, lanes=None):
     frame = capture_frame(ip, port)
     result = detect_cars(frame)
     boxes = extract_boxes(result)
@@ -165,27 +164,33 @@ def process_frame(ip, port, lanes=None, frame=None):
     return lane_counts
 
 def main():
-    global lanes
+    lanes_file = "lanes.npy"
+
     ip = "192.168.1.57"
     port = 8080
-    print("Capturing image from camera...")
-    frame = capture_frame(ip, port)
-    if frame is None:
-        print("Failed to capture frame. Please check your IP/stream.")
-        return
-    saved = cv2.imwrite("capture.jpg", frame)
-    if saved:
-        print("capture.jpg successfully saved.")
+
+    if os.path.exists(lanes_file):
+        print("Loading saved lanes from lanes.npy...")
+        lanes = np.load(lanes_file, allow_pickle=True)
     else:
-        print("Failed to save capture.jpg.")
-        return
-    
-    if lanes is None:
-        print("Opening interactive lane definition tool...")
-        lanes = define_lanes_interactively("capture.jpg")
-        print("Lanes defined:", lanes)
         
-    counts = process_frame("192.168.1.100", 8080, lanes=lanes, frame=frame)
+      print("Capturing image from camera...")
+      frame = capture_frame(ip, port)
+      if frame is None:
+          print("Failed to capture frame. Please check your IP/stream.")
+          exit()
+      saved = cv2.imwrite("capture.jpg", frame)
+
+      if not saved:
+         print("Failed to save capture.jpg.")
+         exit()
+      else:
+        print("capture.jpg successfully saved.")
+        lanes = define_lanes_interactively("capture.jpg")
+        np.save(lanes_file, lanes)
+        print("Lanes saved to lanes.npy.")
+
+    counts = process_frame(ip, port, lanes)
     if counts is None:
       print("Failed to process frame.")
     else:
