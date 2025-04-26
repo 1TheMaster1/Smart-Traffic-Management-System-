@@ -67,7 +67,8 @@ def detect_cars(frame):
   except Exception as e:
         print(f"exception occurred during inference ->\n{e}")
         return None
-  
+  if results[0] is not None:
+      results[0].show()
   return results[0]
 
 def extract_boxes(result):
