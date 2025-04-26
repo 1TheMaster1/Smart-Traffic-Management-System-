@@ -7,9 +7,32 @@ import requests
 model = YOLO("best.pt")  # Load YOLOv8 model
 lanes=[]
 
+def letterbox_image(image, target_size=(640, 640), color=(0,0,0)):
+    """
+    Resize image to fit inside target_size while preserving aspect ratio.
+    Pads with black color.
+    """
+    original_h, original_w = image.shape[:2]
+    target_w, target_h = target_size
+
+    scale = min(target_w / original_w, target_h / original_h)
+    new_w = int(original_w * scale)
+    new_h = int(original_h * scale)
+
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+    # Compute padding
+    top = (target_h - new_h) // 2
+    bottom = target_h - new_h - top
+    left = (target_w - new_w) // 2
+    right = target_w - new_w - left
+
+    # Add border
+    padded = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
+    return padded
+
 def capture_frame(ip, port):
   url=f'http://{ip}:{port}/shot.jpg'  #construct url for webcam stream
-  
   try:
     response = requests.get(url, timeout=5) #http GET request for jpg img
     if response.status_code == 200: #success
