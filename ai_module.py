@@ -121,3 +121,15 @@ def process_frame(ip, port):
     boxes = extract_boxes(result)
     lane_counts = get_lane_counts(boxes)
     return lane_counts
+
+if __name__ == "__main__":
+    # To define lanes first time, uncomment the lines below:
+    # frame = capture_frame("192.168.1.100", 8080)
+    # cv2.imwrite("capture.jpg", frame)
+    # lanes = define_lanes_interactively("capture.jpg")
+
+    counts = process_frame("192.168.1.100", 8080)
+    if counts is None:
+      print("Failed to process frame.")
+    else:
+      print(f"Cars detected per lane: {counts}")
