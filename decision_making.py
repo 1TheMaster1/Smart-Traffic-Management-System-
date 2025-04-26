@@ -3,7 +3,7 @@ import time
 from ai_module import main as get_lane_counts
 
 # Serial communication with ESP32
-#ser = serial.Serial('COM3', 9600)  # Open the serial port (replace with your actual port)
+ser = None#serial.Serial('COM3', 9600)  # Open the serial port (replace with your actual port)
 
 # Example car counts (These values will be updated dynamically based on the CV model)
 car_counts = [1, 2, 2, 3]  # Number of cars detected in each lane (example)
@@ -89,7 +89,8 @@ def traffic_light_loop():
         car_counts = set_car_counts()
 
         #--- Update car count based on ultrasonic
-        #car_counts = update_car_counts()
+        if all(c == 0 for c in car_counts):
+            car_counts = update_car_counts()
 
         #--- Get the dynamic lane order based on current traffic (update in each cycle)
         dynamic_lane_order = sort_lanes_by_priority(car_counts, lane_weights)
@@ -117,3 +118,19 @@ def traffic_light_loop():
             time.sleep(1)  # Wait for 1 second with all red lights on
 
         time.sleep(3)  # Small delay before starting the next traffic cycle
+
+def main():
+    print("Starting traffic light control system...")
+    try:
+        traffic_light_loop()
+    except Exception as e:
+        print(f"Exception occurred\n{e}")
+    finally:
+        if ser and ser.is_open:
+            ser.close()
+            print("Serial port closed.")
+
+
+
+if __name__ == "__main__":
+    main()
