@@ -113,15 +113,12 @@ def define_lanes_interactively(image_path): #interactive tool to define lane bou
 def get_lane_counts(boxes): 
     lane_counts = [0, 0, 0, 0]
 
-    for box in boxes:
-       x1, y1, x2, y2 = box
-       center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
-
-       for i, lane in enumerate(lanes):
-          lane_x1, lane_y1, lane_x2, lane_y2 = lane
-          if lane_x1 <= center_x <= lane_x2 and lane_y1 <= center_y <= lane_y2:
-              lane_counts[i] += 1
-              break
+    for cx, cy in boxes:
+        for i, lane in enumerate(lanes):
+            x1, y1, x2, y2 = lane
+            if x1 <= cx <= x2 and y1 <= cy <= y2 :
+                lane_counts[i] += 1
+                break
     return lane_counts
 
 def process_frame(ip, port):
