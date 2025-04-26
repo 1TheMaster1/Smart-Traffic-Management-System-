@@ -10,36 +10,61 @@ lanes=[]
 def capture_frame(ip, port):
   url=f'http://{ip}:{port}/shot.jpg'  #construct url for webcam stream
   
-  response = requests.get(url, timeout=5) #http GET request for jpg img
-  if response.status_code == 200: #success
+  try:
+    response = requests.get(url, timeout=5) #http GET request for jpg img
+    if response.status_code == 200: #success
 
-    #response.content -> raw byte data
-    #uint8 -> unsigned 8-bit ints -> (0,255) -> standard for greycale/rgb
-    img_arr = np.asarray(bytearray(response.content), np.uint8)
-    
-    frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR) #IMREAD_COLOR -> read img in color instead of greyscale
-    frame = cv2.resize(frame, (640,640))
-    
-    #good for debugging but bad for performance and unnecessary --> detect_cars() can take the actual frame as a parameter (yolo supports numpy arrays too)
-    """filename = f"capture_{int(time.time())}.jpg"
-    cv2.imwrite(filename, frame)"""
-    
-    return frame 
-        
-  else:
-    print(f"failed to fetch img -> status code = {response.status_code}")
-    return None
+      #response.content -> raw byte data
+      #uint8 -> unsigned 8-bit ints -> (0,255) -> standard for greycale/rgb
+      img_arr = np.asarray(bytearray(response.content), np.uint8)
+
+      frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR) #IMREAD_COLOR -> read img in color instead of greyscale
+      frame = cv2.resize(frame, (640,640))
+
+      #good for debugging but bad for performance and unnecessary --> detect_cars() can take the actual frame as a parameter (yolo supports numpy arrays too)
+      """filename = f"capture_{int(time.time())}.jpg"
+      cv2.imwrite(filename, frame)"""
+
+      return frame 
+
+    else:
+      print(f"failed to fetch img -> status code = {response.status_code}")
+      return None
   
+  except requests.exceptions.RequestException as e:
+        print(f"exception occured ->\n{e}")
+        return None
 
 def detect_cars(frame):
-  results = model(frame)
+  if frame is None:
+        print("no frame to run inference on")
+        return None
+  try:
+    results = model(frame)
+  except Exception as e:
+        print(f"exception occurred during inference ->\n{e}")
+        return None
+  
   return results[0]
 
 def extract_boxes(result):
-  boxes = []
+  boxes = []  
+
+  if not hasattr(result, 'boxes'): 
+        print("problem inference")
+        return None
+
+  if len(result.boxes)==0:
+      print("no boxes in image")
+      return None
+
   for box in result.boxes:
-    cx, cy, w, h = box.xywh[0]
-    boxes.append((cx.item(), cy.item()))  #convert tensor elements to float
+    try:
+      cx, cy, w, h = box.xywh[0]
+      boxes.append((cx.item(), cy.item()))  #convert tensor elements to float
+    except (IndexError,ValueError, AttributeError, TypeError) as e:
+            print(f"box skipped -> exception occurred ->\n{e}")
+  
   return boxes
 
 def poly_to_rect(points): #change interactive tool output to rectangle format
@@ -123,10 +148,7 @@ def get_lane_counts(boxes):
 
 def process_frame(ip, port):
     frame = capture_frame(ip, port)
-    if frame is None:
-        print("Error: No frame captured.")
-        return None 
-    result = detect_cars()
+    result = detect_cars(frame)
     boxes = extract_boxes(result)
     lane_counts = get_lane_counts(boxes)
     return lane_counts
