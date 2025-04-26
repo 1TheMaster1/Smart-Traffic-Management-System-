@@ -5,7 +5,6 @@ import requests
 
 
 model = YOLO("best.pt")  # Load YOLOv8 model
-lanes=[]
 
 def letterbox_image(image, target_size=(640, 640), color=(0,0,0)):
     """
@@ -156,7 +155,7 @@ def get_lane_counts(boxes,lanes):
                 break
     return lane_counts
 
-def process_frame(ip, port):
+def process_frame(ip, port, lanes=None, frame=None):
     frame = capture_frame(ip, port)
     result = detect_cars(frame)
     boxes = extract_boxes(result)
@@ -164,12 +163,28 @@ def process_frame(ip, port):
     return lane_counts
 
 if __name__ == "__main__":
-    # To define lanes first time, uncomment the lines below:
-    # frame = capture_frame("192.168.1.100", 8080)
-    # cv2.imwrite("capture.jpg", frame)
-    # lanes = define_lanes_interactively("capture.jpg")
+    
+    DEFINE_LANES = True 
+    print("Capturing image from camera...")
+    frame = capture_frame("192.168.1.100", 8080)
+    if frame is None:
+        print("Failed to capture frame. Please check your IP/stream.")
+        exit()
+    saved = cv2.imwrite("capture.jpg", frame)
+    if saved:
+        print("capture.jpg successfully saved.")
+    else:
+        print("Failed to save capture.jpg.")
+        exit()
+    if DEFINE_LANES:
+        print("Opening interactive lane definition tool...")
+        lanes = define_lanes_interactively("capture.jpg")
+        print("Lanes defined:", lanes)
+    else:
+        #use fallback values
+        lanes = []
 
-    counts = process_frame("192.168.1.100", 8080)
+    counts = process_frame("192.168.1.100", 8080, lanes=lanes, frame=frame)
     if counts is None:
       print("Failed to process frame.")
     else:
