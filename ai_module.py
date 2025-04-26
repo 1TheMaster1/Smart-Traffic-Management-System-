@@ -6,6 +6,8 @@ import requests
 
 model = YOLO("best.pt")  # Load YOLOv8 model
 
+lanes = None  
+
 def letterbox_image(image, target_size=(640, 640), color=(0,0,0)):
     """
     Resize image to fit inside target_size while preserving aspect ratio.
@@ -163,9 +165,9 @@ def process_frame(ip, port, lanes=None, frame=None):
     return lane_counts
 
 def main():
+    global lanes
     ip = "192.168.1.57"
     port = 8080
-    DEFINE_LANES = True 
     print("Capturing image from camera...")
     frame = capture_frame(ip, port)
     if frame is None:
@@ -177,19 +179,18 @@ def main():
     else:
         print("Failed to save capture.jpg.")
         return
-    if DEFINE_LANES:
+    
+    if lanes is None:
         print("Opening interactive lane definition tool...")
         lanes = define_lanes_interactively("capture.jpg")
         print("Lanes defined:", lanes)
-    else:
-        #use fallback values
-        lanes = []
-
+        
     counts = process_frame("192.168.1.100", 8080, lanes=lanes, frame=frame)
     if counts is None:
       print("Failed to process frame.")
     else:
       print(f"Cars detected per lane: {counts}")
+    return counts
 
 
 if __name__ == "__main__":
