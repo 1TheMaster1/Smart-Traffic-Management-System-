@@ -38,9 +38,8 @@ def detect_cars(frame):
 def extract_boxes(result):
   boxes = []
   for box in result.boxes:
-    x1, y1, x2, y2 = box.xyxy[0]
-    boxes.append((float(x1), float(y1), float(x2), float(y2))) #convert tensor elements to float
-    print(f"Box coordinates: ({x1}, {y1}, {x2}, {y2})")
+    cx, cy, w, h = box.xywh[0]
+    boxes.append((cx.item(), cy.item()))  #convert tensor elements to float
   return boxes
 
 def poly_to_rect(points): #change interactive tool output to rectangle format
