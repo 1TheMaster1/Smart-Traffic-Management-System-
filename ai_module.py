@@ -31,9 +31,8 @@ def capture_frame(ip, port):
     return None
   
 
-def detect_cars():
-  frame_path="capture.jpg"
-  results = model(frame_path)
+def detect_cars(frame):
+  results = model(frame)
   return results[0]
 
 def extract_boxes(result):
