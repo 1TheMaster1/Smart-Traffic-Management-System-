@@ -91,14 +91,6 @@ def extract_boxes(result):
   
   return boxes
 
-def poly_to_rect(points): #change interactive tool output to rectangle format
-    if not points:
-        raise ValueError("no points detected")
-    
-    x_values = [p[0] for p in points]
-    y_values = [p[1] for p in points]
-    return(min(x_values), min(y_values), max(x_values), max(y_values))
-
 def define_lanes_interactively(image_path): #interactive tool to define lane boundaries
     lane_points = []
     current_lane = []
@@ -147,25 +139,19 @@ def define_lanes_interactively(image_path): #interactive tool to define lane bou
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
-    # Convert polygons to rectangles
-    rectangles = []
-    for poly in lanes_polygons:
-        rect = poly_to_rect(poly)
-        rectangles.append(rect)
-   
-    print("Lane Definitions (Rectangles):")
-    for i, rect in enumerate(rectangles):
-        print(f"Lane {i}: {rect}")
+ 
+    print("Lane Definitions (Polygons):")
+    for i, poly in enumerate(lanes_polygons):
+        print(f"Lane {i}: {poly}")
     
-    return rectangles
+    return lanes_polygons
 
-def get_lane_counts(boxes): 
+def get_lane_counts(boxes,lanes): 
     lane_counts = [0, 0, 0, 0]
-
     for cx, cy in boxes:
         for i, lane in enumerate(lanes):
-            x1, y1, x2, y2 = lane
-            if x1 <= cx <= x2 and y1 <= cy <= y2 :
+            contour = np.array(lane, dtype=np.int32) #Convert the polygon point list into a NumPy array (OpenCV expects contours as NumPy arrays).
+            if cv2.pointPolygonTest(contour, (cx, cy), False) >= 0:
                 lane_counts[i] += 1
                 break
     return lane_counts
@@ -174,7 +160,7 @@ def process_frame(ip, port):
     frame = capture_frame(ip, port)
     result = detect_cars(frame)
     boxes = extract_boxes(result)
-    lane_counts = get_lane_counts(boxes)
+    lane_counts = get_lane_counts(boxes,lanes)
     return lane_counts
 
 if __name__ == "__main__":
