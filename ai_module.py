@@ -1,19 +1,33 @@
 from ultralytics import YOLO
 import cv2
 import numpy as np
+import requests
+
 
 model = YOLO("best.pt")  # Load YOLOv8 model
 lanes=[]
 
 def capture_frame(ip, port):
   url=f'http://{ip}:{port}/shot.jpg'  #construct url for webcam stream
-  cap = cv2.VideoCapture(url) #connect to webcam stream
-  ret, frame = cap.read() #fetch latest frame
-  if ret:
-    cv2.imwrite("capture.jpg", frame)  #save image locally
-    return frame  #NumPy array representing image
+  
+  response = requests.get(url, timeout=5) #http GET request for jpg img
+  if response.status_code == 200: #success
+
+    #response.content -> raw byte data
+    #uint8 -> unsigned 8-bit ints -> (0,255) -> standard for greycale/rgb
+    img_arr = np.asarray(bytearray(response.content), np.uint8)
+    
+    frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR) #IMREAD_COLOR -> read img in color instead of greyscale
+    frame = cv2.resize(frame, (640,640))
+    
+    #good for debugging but bad for performance and unnecessary --> detect_cars() can take the actual frame as a parameter (yolo supports numpy arrays too)
+    """filename = f"capture_{int(time.time())}.jpg"
+    cv2.imwrite(filename, frame)"""
+    
+    return frame 
+        
   else:
-    print("Failed to capture image")
+    print(f"failed to fetch img -> status code = {response.status_code}")
     return None
   
 
