@@ -6,8 +6,6 @@ import os
 
 model = YOLO("best.pt")  # Load YOLOv8 model
 
-lanes = None  
-
 def resize_image(image, target_size=(640, 640), color=(0,0,0)):
     """
     Resize image to fit inside target_size while preserving aspect ratio.
@@ -60,12 +58,12 @@ def detect_cars(frame):
         print("no frame to run inference on")
         return None
   try:
-    results = model(frame)
+    results = model(frame) #pass frame to yolo model for inference 
   except Exception as e:
         print(f"exception occurred during inference ->\n{e}")
         return None
   if results[0] is not None:
-      results[0].show()
+      results[0].show()  
   return results[0]
 
 def extract_boxes(result):
@@ -79,9 +77,10 @@ def extract_boxes(result):
       print("no boxes in image")
       return None
 
+  #get center coordinates of cars (boxes)
   for box in result.boxes:
     try:
-      cx, cy, w, h = box.xywh[0]
+      cx, cy, w, h = box.xywh[0] 
       boxes.append((cx.item(), cy.item()))  #convert tensor elements to float
     except (IndexError,ValueError, AttributeError, TypeError) as e:
             print(f"box skipped -> exception occurred ->\n{e}")
@@ -89,7 +88,6 @@ def extract_boxes(result):
   return boxes
 
 def define_lanes_interactively(image_path): #interactive tool to define lane boundaries
-    #lane_points = []
     current_lane = []
     lanes_polygons = []
     
@@ -147,7 +145,7 @@ def get_lane_counts(boxes,lanes):
     lane_counts = [0, 0, 0, 0]
     for cx, cy in boxes:
         for i, lane in enumerate(lanes): 
-            if cv2.pointPolygonTest(lane, (cx, cy), False) >= 0:
+            if cv2.pointPolygonTest(lane, (cx, cy), False) >= 0: #check if center coordinates of the box lie in the lane
                 lane_counts[i] += 1
                 break
     return lane_counts
@@ -160,8 +158,9 @@ def process_frame(ip, port, lanes=None):
     return lane_counts
 
 def main():
-    lanes_file = "lanes.npy"
+    lanes_file = "lanes.npy" #to save lane coordinates after first computation
 
+    #socket definition
     ip = "172.20.10.2"
     port = 8080
 
@@ -172,14 +171,17 @@ def main():
         
       print("Capturing image from camera...")
       frame = capture_frame(ip, port)
+
       if frame is None:
           print("Failed to capture frame. Please check your IP/stream.")
           exit()
+      
       saved = cv2.imwrite("capture.jpg", frame)
 
       if not saved:
          print("Failed to save capture.jpg.")
          exit()
+
       else:
         print("capture.jpg successfully saved.")
         lanes = define_lanes_interactively("capture.jpg")
@@ -191,6 +193,7 @@ def main():
       print("Failed to process frame.")
     else:
       print(f"Cars detected per lane: {counts}")
+    
     return counts
 
 
