@@ -8,7 +8,7 @@ model = YOLO("best.pt")  # Load YOLOv8 model
 
 lanes = None  
 
-def letterbox_image(image, target_size=(640, 640), color=(0,0,0)):
+def resize_image(image, target_size=(640, 640), color=(0,0,0)):
     """
     Resize image to fit inside target_size while preserving aspect ratio.
     Pads with black color.
@@ -42,13 +42,9 @@ def capture_frame(ip, port):
       #uint8 -> unsigned 8-bit ints -> (0,255) -> standard for greycale/rgb
       img_arr = np.asarray(bytearray(response.content), np.uint8)
 
-      frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR) #IMREAD_COLOR -> read img in color instead of greyscale
-      frame = cv2.resize(frame, (640,640))
-
-      #good for debugging but bad for performance and unnecessary --> detect_cars() can take the actual frame as a parameter (yolo supports numpy arrays too)
-      """filename = f"capture_{int(time.time())}.jpg"
-      cv2.imwrite(filename, frame)"""
-
+      frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR) #decode image in color
+      frame = resize_image(frame)
+      
       return frame 
 
     else:
@@ -166,7 +162,7 @@ def process_frame(ip, port, lanes=None):
 def main():
     lanes_file = "lanes.npy"
 
-    ip = "192.168.1.57"
+    ip = "172.20.10.2"
     port = 8080
 
     if os.path.exists(lanes_file):
