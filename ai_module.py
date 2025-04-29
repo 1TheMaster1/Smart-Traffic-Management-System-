@@ -50,7 +50,7 @@ def capture_frame(ip, port):
       return None
   
   except requests.exceptions.RequestException as e:
-        print(f"exception occured ->\n{e}")
+        print(f"Exception occured\n{e}")
         return None
 
 def detect_cars(frame):
@@ -60,7 +60,7 @@ def detect_cars(frame):
   try:
     results = model(frame) #pass frame to yolo model for inference 
   except Exception as e:
-        print(f"exception occurred during inference ->\n{e}")
+        print(f"Exception occurred during inference\n{e}")
         return None
   if results[0] is not None:
       results[0].show()  
@@ -83,7 +83,7 @@ def extract_boxes(result):
       cx, cy, w, h = box.xywh[0] 
       boxes.append((cx.item(), cy.item()))  #convert tensor elements to float
     except (IndexError,ValueError, AttributeError, TypeError) as e:
-            print(f"box skipped -> exception occurred ->\n{e}")
+            print(f"box skipped -> exception occurred\n{e}")
   
   return boxes
 
@@ -174,13 +174,13 @@ def main():
 
       if frame is None:
           print("Failed to capture frame. Please check your IP/stream.")
-          exit()
+          return [0,0,0,0]
       
       saved = cv2.imwrite("capture.jpg", frame)
 
       if not saved:
          print("Failed to save capture.jpg.")
-         exit()
+         return [0,0,0,0]
 
       else:
         print("capture.jpg successfully saved.")
@@ -189,7 +189,7 @@ def main():
         print("Lanes saved to lanes.npy.")
 
     counts = process_frame(ip, port, lanes)
-    if counts is None:
+    if counts == [0,0,0,0]:
       print("Failed to process frame.")
     else:
       print(f"Cars detected per lane: {counts}")

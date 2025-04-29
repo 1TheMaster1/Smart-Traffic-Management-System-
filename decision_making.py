@@ -20,6 +20,7 @@ def set_car_counts():
     if car_counts is None:
         print("Failed to get car counts.")
         car_counts = [0, 0, 0, 0]  # fallback values
+    print(f"car counts = {car_counts}")
     return car_counts
 
 # Function to read data from ESP32 and update car counts
